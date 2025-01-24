@@ -10,43 +10,35 @@ import CoreData
 
 struct ListView: View {
     @Environment(\.managedObjectContext) private var viewContext
-    
-    // FetchRequest for Pending Tasks
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Task.dueDate, ascending: true)],
-        predicate: NSPredicate(format: "isCompleted == %@", NSNumber(booleanLiteral: false)),
-        animation: .default)
-    private var pendingTasks: FetchedResults<Task>
-    
-    // FetchRequest for Completed Tasks
-    @FetchRequest(
-        sortDescriptors: [NSSortDescriptor(keyPath: \Task.dueDate, ascending: true)],
-        predicate: NSPredicate(format: "isCompleted == %@", NSNumber(booleanLiteral: true)),
-        animation: .default)
-    private var completedTasks: FetchedResults<Task>
-    
+    @StateObject private var viewModel: ListViewModel
     @State private var showForm = false
+    
+    init() {
+        _viewModel = StateObject(wrappedValue: ListViewModel())
+    }
     
     var body: some View {
         NavigationView {
             List {
-                // Pending Tasks Section
-                if !pendingTasks.isEmpty {
+                if !viewModel.pendingTasks.isEmpty {
                     Section(header: Text("Pending")) {
-                        ForEach(pendingTasks) { task in
-                            TaskRow(task: task)
+                        ForEach(viewModel.pendingTasks) { task in
+                            TaskRow(task: task, viewModel: viewModel)
                         }
-                        .onDelete(perform: deletePendingTasks)
+                        .onDelete { indexSet in
+                            viewModel.deleteTasks(indexSet.map { viewModel.pendingTasks[$0] }, context: viewContext)
+                        }
                     }
                 }
                 
-                // Completed Tasks Section
-                if !completedTasks.isEmpty {
+                if !viewModel.completedTasks.isEmpty {
                     Section(header: Text("Completed")) {
-                        ForEach(completedTasks) { task in
-                            TaskRow(task: task)
+                        ForEach(viewModel.completedTasks) { task in
+                            TaskRow(task: task, viewModel: viewModel)
                         }
-                        .onDelete(perform: deleteCompletedTasks)
+                        .onDelete { indexSet in
+                            viewModel.deleteTasks(indexSet.map { viewModel.completedTasks[$0] }, context: viewContext)
+                        }
                     }
                 }
             }
@@ -59,110 +51,45 @@ struct ListView: View {
             })
             .sheet(isPresented: $showForm) {
                 FormView()
-                    .environment(\.managedObjectContext, viewContext)
-                    .presentationDetents([.medium, .large])
+            }
+        }
+        .onAppear {
+            viewModel.loadTasks(context: viewContext)
+        }
+    }
+}
 
+struct TaskRow: View {
+    @ObservedObject var task: Task
+    let viewModel: ListViewModel
+    
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading) {
+                Text(task.title ?? "Untitled")
+                    .font(.headline)
+                Text(task.details ?? "")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                Text("Due: \(task.dueDate ?? Date(), formatter: ListViewModel.dateFormatter)")
+                    .font(.caption)
+                    .foregroundColor(.gray)
             }
-        }
-    }
-    
-    private func deletePendingTasks(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { pendingTasks[$0] }.forEach(viewContext.delete)
-            
-            do {
-                try viewContext.save()
-            } catch {
-                
-                print("Error deleting tasks: \(error.localizedDescription)")
-            }
-        }
-    }
-    
-    
-    private func deleteCompletedTasks(offsets: IndexSet) {
-        withAnimation {
-            offsets.map { completedTasks[$0] }.forEach(viewContext.delete)
-            
-            do {
-                try viewContext.save()
-            } catch {
-                // Handle the error appropriately
-                print("Error deleting tasks: \(error.localizedDescription)")
-            }
-        }
-    }
-    
-    struct TaskRow: View {
-        @ObservedObject var task: Task
-        @Environment(\.managedObjectContext) private var viewContext
-        
-        var body: some View {
-            HStack {
-                VStack(alignment: .leading) {
-                    Text(task.title ?? "Untitled")
-                        .font(.headline)
-                    Text(task.details ?? "")
-                        .font(.subheadline)
-                        .foregroundColor(.secondary)
-                    Text("Due: \(task.dueDate ?? Date(), formatter: dateFormatter)")
-                        .font(.caption)
-                        .foregroundColor(.gray)
-                }
-                Spacer()
-                priorityIcon()
+            Spacer()
+            if let priorityIcon = viewModel.priorityIcon(for: task.priority ?? "None") {
+                Image(systemName: priorityIcon.systemName)
+                    .foregroundColor(priorityIcon.color)
+                    .font(.title2)
                     .padding()
-                Button(action: {
-                    task.isCompleted.toggle()
-                    saveContext()
-                }) {
-                    Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
-                        .foregroundColor(task.isCompleted ? .green : .gray)
-                        .font(.title2)
-                }
-                .buttonStyle(PlainButtonStyle())
             }
-        }
-        
-        private func saveContext() {
-            do {
-                try viewContext.save()
-            } catch {
-                print("Error saving context: \(error.localizedDescription)")
+            Button(action: {
+                viewModel.toggleTaskCompletion(task, context: task.managedObjectContext!)
+            }) {
+                Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
+                    .foregroundColor(task.isCompleted ? .green : .gray)
+                    .font(.title2)
             }
-        }
-        
-        private func priorityIcon() -> some View {
-               switch task.priority {
-               case "High":
-                   return AnyView(
-                       Image(systemName: "exclamationmark.circle.fill")
-                           .foregroundColor(.red)
-                           .font(.title2)
-                   )
-               case "Medium":
-                   return AnyView(
-                       Image(systemName: "exclamationmark.circle.fill")
-                           .foregroundColor(.orange)
-                           .font(.title2)
-                   )
-               case "Low":
-                   return AnyView(
-                       Image(systemName: "exclamationmark.circle.fill")
-                            .foregroundColor(.yellow)
-                            .font(.title2)
-                   )
-               case "None":
-                   return AnyView(EmptyView()) // No icon 
-               default:
-                   return AnyView(EmptyView())
-               }
-           }
-        
-        private var dateFormatter: DateFormatter {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .short
-            return formatter
+            .buttonStyle(PlainButtonStyle())
         }
     }
 }

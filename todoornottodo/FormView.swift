@@ -11,11 +11,7 @@ import CoreData
 struct FormView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.presentationMode) var presentationMode
-
-    @State private var title: String = ""
-    @State private var details: String = ""
-    @State private var dueDate: Date = Date()
-    @State private var priority: Priority = .none
+    @StateObject private var viewModel: TaskViewModel
 
     enum Priority: String, CaseIterable, Identifiable {
         case none = "None"
@@ -25,31 +21,42 @@ struct FormView: View {
 
         var id: String { self.rawValue }
     }
+    
+    init() {
+        _viewModel = StateObject(wrappedValue: TaskViewModel())
+    }
 
     var body: some View {
         NavigationStack {
             Form {
                 Section(header: Text("Task Details")) {
-                    TextField("Title", text: $title)
+                    TextField("Title", text: $viewModel.title)
                         .autocapitalization(.words)
                         .disableAutocorrection(true)
                     
-                    TextField("Description", text: $details)
+                    TextField("Description", text: $viewModel.details)
                         .autocapitalization(.sentences)
                         .disableAutocorrection(true)
                 }
 
                 Section(header: Text("Due Date")) {
-                    DatePicker("Select Due Date", selection: $dueDate, displayedComponents: .date)
+                    DatePicker("Select Due Date", selection: $viewModel.dueDate, displayedComponents: .date)
                 }
 
                 Section(header: Text("Priority")) {
-                    Picker("Priority", selection: $priority) {
+                    Picker("Priority", selection: $viewModel.priority) {
                         ForEach(Priority.allCases) { priority in
                             Text(priority.rawValue).tag(priority)
                         }
                     }
                     .pickerStyle(SegmentedPickerStyle())
+                }
+                
+                if let error = viewModel.formError {
+                    Section {
+                        Text(error)
+                            .foregroundColor(.red)
+                    }
                 }
             }
             .navigationTitle("Add New Task")
@@ -59,36 +66,18 @@ struct FormView: View {
                     presentationMode.wrappedValue.dismiss()
                 },
                 trailing: Button("Save") {
-                    saveTask()
-                    presentationMode.wrappedValue.dismiss()
+                    if viewModel.saveTask(context: viewContext) {
+                        presentationMode.wrappedValue.dismiss()
+                    }
                 }
-                .disabled(title.trimmingCharacters(in: .whitespaces).isEmpty) // Disable save if title is empty
+                .disabled(!viewModel.isValidForm)
             )
         }
         .presentationDetents([.medium, .large])
-}
-
-
-    private func saveTask() {
-        let newTask = Task(context: viewContext)
-        newTask.title = title.trimmingCharacters(in: .whitespaces)
-        newTask.details = details.trimmingCharacters(in: .whitespaces)
-        newTask.dueDate = dueDate
-        newTask.priority = priority.rawValue
-        newTask.isCompleted = false
-
-        do {
-            try viewContext.save()
-            print("Task Saved Successfully")
-        } catch {
-            // Handle the Core Data error appropriately
-            print("Failed to save task: \(error.localizedDescription)")
-        }
     }
 }
 
 #Preview {
     FormView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-
 }

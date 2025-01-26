@@ -9,7 +9,9 @@
 import Foundation
 import CoreData
 import SwiftUI
+import _Concurrency
 
+@MainActor
 class TaskViewModel: ObservableObject {
     // MARK: - Published Properties
     @Published var title: String = ""
@@ -23,8 +25,8 @@ class TaskViewModel: ObservableObject {
     private let taskService: TaskServiceProtocol
     
     // MARK: - Initialization
-    init(taskService: TaskServiceProtocol = TaskService()) {
-        self.taskService = taskService
+    init(taskService: TaskServiceProtocol? = nil, context: NSManagedObjectContext) {
+        self.taskService = taskService ?? TaskService(repository: CoreDataTaskRepository(context: context))
     }
     
     // MARK: - Computed Properties
@@ -43,7 +45,7 @@ class TaskViewModel: ObservableObject {
     }
     
     // MARK: - Public Methods
-    func saveTask(context: NSManagedObjectContext) -> Bool {
+    func saveTask() -> Bool {
         if let error = TaskFormatter.validateTitle(title) {
             formError = error
             return false
@@ -52,22 +54,26 @@ class TaskViewModel: ObservableObject {
         isSaving = true
         formError = nil
         
-        do {
-            try taskService.createTask(
-                title: title.trimmingCharacters(in: .whitespaces),
-                details: details.trimmingCharacters(in: .whitespaces),
-                dueDate: dueDate,
-                priority: priority.rawValue,
-                context: context
-            )
-            resetForm()
-            isSaving = false
-            return true
-        } catch {
-            formError = error.localizedDescription
-            isSaving = false
-            return false
+        _Concurrency.Task {
+            do {
+                try await taskService.createTask(
+                    title: title.trimmingCharacters(in: .whitespaces),
+                    details: details.trimmingCharacters(in: .whitespaces),
+                    dueDate: dueDate,
+                    priority: priority.rawValue
+                )
+                resetForm()
+                isSaving = false
+                TaskState.shared.triggerRefresh()
+                return true
+            } catch {
+                formError = error.localizedDescription
+                isSaving = false
+                return false
+            }
         }
+        
+        return true  // Return true to dismiss the form, the actual save happens async
     }
     
     func resetForm() {
@@ -77,4 +83,4 @@ class TaskViewModel: ObservableObject {
         priority = .none
         formError = nil
     }
-} 
+}

@@ -8,30 +8,30 @@
 import SwiftUI
 
 struct TaskRow: View {
-    @ObservedObject var task: Task
+    let task: TaskDTO
     let viewModel: ListViewModel
     
     var body: some View {
         HStack {
             VStack(alignment: .leading) {
-                Text(task.title ?? "Untitled")
+                Text(task.title)
                     .font(.headline)
-                Text(task.details ?? "")
+                Text(task.details)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                Text("Due: \(task.dueDate ?? Date(), formatter: ListViewModel.dateFormatter)")
+                Text("Due: \(task.dueDate, formatter: ListViewModel.dateFormatter)")
                     .font(.caption)
                     .foregroundColor(.gray)
             }
             Spacer()
-            if let priorityIcon = viewModel.priorityIcon(for: task.priority ?? "None") {
+            if let priorityIcon = viewModel.priorityIcon(for: task.priority) {
                 Image(systemName: priorityIcon.systemName)
                     .foregroundColor(priorityIcon.color)
                     .font(.title2)
                     .padding()
             }
             Button(action: {
-                viewModel.toggleTaskCompletion(task, context: task.managedObjectContext!)
+                viewModel.toggleTaskCompletion(task)
             }) {
                 Image(systemName: task.isCompleted ? "checkmark.circle.fill" : "circle")
                     .foregroundColor(task.isCompleted ? .green : .gray)
@@ -40,4 +40,4 @@ struct TaskRow: View {
             .buttonStyle(PlainButtonStyle())
         }
     }
-} 
+}

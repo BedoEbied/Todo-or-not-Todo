@@ -14,7 +14,8 @@ struct ListView: View {
     @State private var showForm = false
     
     init() {
-        _viewModel = StateObject(wrappedValue: ListViewModel())
+        let context = PersistenceController.shared.container.viewContext
+        _viewModel = StateObject(wrappedValue: ListViewModel(context: context))
     }
     
     var body: some View {
@@ -41,7 +42,7 @@ struct ListView: View {
                 
                 if let error = viewModel.errorMessage {
                     ErrorView(message: error) {
-                        viewModel.loadTasks(context: viewContext)
+                        viewModel.loadTasks()
                     }
                 }
             }
@@ -56,7 +57,7 @@ struct ListView: View {
             }
         }
         .onAppear {
-            viewModel.loadTasks(context: viewContext)
+            viewModel.loadTasks()
         }
     }
 }
@@ -64,18 +65,18 @@ struct ListView: View {
 // MARK: - Subviews
 private struct TasksSection: View {
     let title: String
-    let tasks: [Task]
+    let tasks: [TaskDTO]
     let viewModel: ListViewModel
     @Environment(\.managedObjectContext) private var viewContext
     
     var body: some View {
         if !tasks.isEmpty {
             Section(header: Text(title)) {
-                ForEach(tasks) { task in
+                ForEach(tasks, id: \.id) { task in
                     TaskRow(task: task, viewModel: viewModel)
                 }
                 .onDelete { indexSet in
-                    viewModel.deleteTasks(indexSet.map { tasks[$0] }, context: viewContext)
+                    viewModel.deleteTasks(indexSet.map { tasks[$0] })
                 }
             }
         }
@@ -106,4 +107,4 @@ private struct ErrorView: View {
 #Preview {
     ListView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-} 
+}

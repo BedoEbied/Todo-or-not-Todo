@@ -14,7 +14,7 @@ struct TodoApp: App {
     
     init() {
         persistenceController = PersistenceController.shared
-        taskService = TaskService()
+        taskService = TaskService(repository: CoreDataTaskRepository(context: persistenceController.container.viewContext))
     }
     
     var body: some Scene {

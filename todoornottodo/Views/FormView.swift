@@ -15,7 +15,7 @@ struct FormView: View {
     @StateObject private var viewModel: TaskViewModel
     
     init() {
-        _viewModel = StateObject(wrappedValue: TaskViewModel())
+        _viewModel = StateObject(wrappedValue: TaskViewModel(context: PersistenceController.shared.container.viewContext))
     }
     
     var body: some View {
@@ -112,7 +112,7 @@ private struct SaveButton: View {
     
     var body: some View {
         Button("Save") {
-            if viewModel.saveTask(context: context) {
+            if viewModel.saveTask() {
                 onSave()
             }
         }
@@ -123,4 +123,4 @@ private struct SaveButton: View {
 #Preview {
     FormView()
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
-} 
+}

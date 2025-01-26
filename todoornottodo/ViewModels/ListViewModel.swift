@@ -5,15 +5,16 @@
 //  Created by Abdelrahman Ebied on 26/01/2025.
 //
 
-
 import Foundation
 import CoreData
 import SwiftUI
+import _Concurrency
 
+@MainActor
 class ListViewModel: ObservableObject {
     // MARK: - Published Properties
-    @Published private(set) var pendingTasks: [Task] = []
-    @Published private(set) var completedTasks: [Task] = []
+    @Published private(set) var pendingTasks: [TaskDTO] = []
+    @Published private(set) var completedTasks: [TaskDTO] = []
     @Published private(set) var errorMessage: String?
     @Published private(set) var isLoading = false
     
@@ -21,51 +22,62 @@ class ListViewModel: ObservableObject {
     private let taskService: TaskServiceProtocol
     
     // MARK: - Initialization
-    init(taskService: TaskServiceProtocol = TaskService()) {
-        self.taskService = taskService
+    init(taskService: TaskServiceProtocol? = nil, context: NSManagedObjectContext) {
+        self.taskService = taskService ?? TaskService(repository: CoreDataTaskRepository(context: context))
     }
     
     // MARK: - Public Methods
-    func loadTasks(context: NSManagedObjectContext) {
-        isLoading = true
-        errorMessage = nil
+    func loadTasks() {
         
-        do {
-            let allTasks = try taskService.fetchTasks(context: context)
-            pendingTasks = allTasks.filter { !$0.isCompleted }
-            completedTasks = allTasks.filter { $0.isCompleted }
-        } catch {
-            errorMessage = error.localizedDescription
+        _Concurrency.Task {
+            isLoading = true
+            errorMessage = nil
+            
+            do {
+                let allTasks = try await taskService.fetchTasks()
+                pendingTasks = allTasks.filter { !$0.isCompleted }
+                completedTasks = allTasks.filter { $0.isCompleted }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+            
+            isLoading = false
         }
+    }
+    
+    func deleteTask(_ task: TaskDTO) {
+        _Concurrency.Task {
+            do {
+                try await taskService.deleteTask(id: task.id)
+                loadTasks()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+    }
+    
+    func toggleTaskCompletion(_ task: TaskDTO) {
+        var updatedTask = task
+        updatedTask.isCompleted.toggle()
         
-        isLoading = false
-    }
-    
-    func deleteTask(_ task: Task, context: NSManagedObjectContext) {
-        do {
-            try taskService.deleteTask(task, context: context)
-            loadTasks(context: context)
-        } catch {
-            errorMessage = error.localizedDescription
+        _Concurrency.Task {
+            do {
+                try await taskService.updateTask(updatedTask)
+                loadTasks()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
     
-    func toggleTaskCompletion(_ task: Task, context: NSManagedObjectContext) {
-        task.isCompleted.toggle()
-        do {
-            try taskService.updateTask(task, context: context)
-            loadTasks(context: context)
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-    }
-    
-    func deleteTasks(_ tasks: [Task], context: NSManagedObjectContext) {
-        do {
-            try taskService.deleteTasks(tasks, context: context)
-            loadTasks(context: context)
-        } catch {
-            errorMessage = error.localizedDescription
+    func deleteTasks(_ tasks: [TaskDTO]) {
+        _Concurrency.Task {
+            do {
+                try await taskService.deleteTasks(ids: tasks.map { $0.id })
+                loadTasks()
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
     }
     
@@ -77,5 +89,5 @@ class ListViewModel: ObservableObject {
     static var dateFormatter: DateFormatter {
         TaskFormatter.dateFormatter
     }
-} 
+}
 

@@ -1,3 +1,10 @@
+//
+//  TaskState.swift
+//  todoornottodo
+//
+//  Created by Abdelrahman Ebied on 26/01/2025.
+//
+
 import Foundation
 
 class TaskState: ObservableObject {
@@ -13,4 +20,4 @@ class TaskState: ObservableObject {
     func resetRefresh() {
         shouldRefreshTasks = false
     }
-} 
+}

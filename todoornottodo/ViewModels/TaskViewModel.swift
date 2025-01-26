@@ -1,21 +1,40 @@
+//
+//  TaskPriority.swift
+//  todoornottodo
+//
+//  Created by Abdelrahman Ebied on 26/01/2025.
+//
+
+
 import Foundation
 import CoreData
 import SwiftUI
 
 class TaskViewModel: ObservableObject {
-    // MARK: - Form State
+    // MARK: - Published Properties
     @Published var title: String = ""
     @Published var details: String = ""
     @Published var dueDate: Date = Date()
-    @Published var priority: FormView.Priority = .none
-    @Published var formError: String?
+    @Published var priority: TaskPriority = .none
+    @Published private(set) var formError: String?
+    @Published private(set) var isSaving = false
     
+    // MARK: - Dependencies
     private let taskService: TaskServiceProtocol
-    private let taskState: TaskState
     
-    init(taskService: TaskServiceProtocol = TaskService(), taskState: TaskState = .shared) {
+    // MARK: - Task Priority Enum
+    enum TaskPriority: String, CaseIterable, Identifiable {
+        case none = "None"
+        case low = "Low"
+        case medium = "Medium"
+        case high = "High"
+        
+        var id: String { rawValue }
+    }
+
+    // MARK: - Initialization
+    init(taskService: TaskServiceProtocol = TaskService()) {
         self.taskService = taskService
-        self.taskState = taskState
     }
     
     // MARK: - Computed Properties
@@ -33,12 +52,15 @@ class TaskViewModel: ObservableObject {
         return nil
     }
     
-    // MARK: - Intent(s)
+    // MARK: - Public Methods
     func saveTask(context: NSManagedObjectContext) -> Bool {
         if let error = TaskFormatter.validateTitle(title) {
             formError = error
             return false
         }
+        
+        isSaving = true
+        formError = nil
         
         do {
             try taskService.createTask(
@@ -49,10 +71,11 @@ class TaskViewModel: ObservableObject {
                 context: context
             )
             resetForm()
-            taskState.triggerRefresh()
+            isSaving = false
             return true
         } catch {
             formError = error.localizedDescription
+            isSaving = false
             return false
         }
     }

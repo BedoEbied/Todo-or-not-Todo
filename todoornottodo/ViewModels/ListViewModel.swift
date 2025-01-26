@@ -1,38 +1,50 @@
+//
+//  ListViewModel.swift
+//  todoornottodo
+//
+//  Created by Abdelrahman Ebied on 26/01/2025.
+//
+
+
 import Foundation
 import CoreData
 import SwiftUI
 
 class ListViewModel: ObservableObject {
-    @Published var pendingTasks: [Task] = []
-    @Published var completedTasks: [Task] = []
-    @Published var errorMessage: String?
+    // MARK: - Published Properties
+    @Published private(set) var pendingTasks: [Task] = []
+    @Published private(set) var completedTasks: [Task] = []
+    @Published private(set) var errorMessage: String?
+    @Published private(set) var isLoading = false
     
+    // MARK: - Dependencies
     private let taskService: TaskServiceProtocol
-    private let taskState: TaskState
     
-    init(taskService: TaskServiceProtocol = TaskService(), taskState: TaskState = .shared) {
+    // MARK: - Initialization
+    init(taskService: TaskServiceProtocol = TaskService()) {
         self.taskService = taskService
-        self.taskState = taskState
     }
     
-    // MARK: - Intent(s)
+    // MARK: - Public Methods
     func loadTasks(context: NSManagedObjectContext) {
+        isLoading = true
+        errorMessage = nil
+        
         do {
             let allTasks = try taskService.fetchTasks(context: context)
             pendingTasks = allTasks.filter { !$0.isCompleted }
             completedTasks = allTasks.filter { $0.isCompleted }
-            errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
+        
+        isLoading = false
     }
     
     func deleteTask(_ task: Task, context: NSManagedObjectContext) {
         do {
             try taskService.deleteTask(task, context: context)
             loadTasks(context: context)
-            taskState.triggerRefresh()
-            errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -43,8 +55,6 @@ class ListViewModel: ObservableObject {
         do {
             try taskService.updateTask(task, context: context)
             loadTasks(context: context)
-            taskState.triggerRefresh()
-            errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -54,32 +64,12 @@ class ListViewModel: ObservableObject {
         do {
             try taskService.deleteTasks(tasks, context: context)
             loadTasks(context: context)
-            taskState.triggerRefresh()
-            errorMessage = nil
         } catch {
             errorMessage = error.localizedDescription
         }
     }
     
-    // MARK: - View Data
-    struct TaskRowData: Identifiable {
-        let id: NSManagedObjectID
-        let title: String
-        let details: String
-        let dueDate: Date
-        let priority: String
-        let isCompleted: Bool
-        
-        init(task: Task) {
-            self.id = task.objectID
-            self.title = task.title ?? "Untitled"
-            self.details = task.details ?? ""
-            self.dueDate = task.dueDate ?? Date()
-            self.priority = task.priority ?? "None"
-            self.isCompleted = task.isCompleted
-        }
-    }
-    
+    // MARK: - View Helpers
     func priorityIcon(for priority: String) -> (systemName: String, color: Color)? {
         TaskFormatter.priorityIcon(for: priority)
     }
@@ -87,4 +77,5 @@ class ListViewModel: ObservableObject {
     static var dateFormatter: DateFormatter {
         TaskFormatter.dateFormatter
     }
+} 
 } 

@@ -22,16 +22,6 @@ class TaskViewModel: ObservableObject {
     // MARK: - Dependencies
     private let taskService: TaskServiceProtocol
     
-    // MARK: - Task Priority Enum
-    enum TaskPriority: String, CaseIterable, Identifiable {
-        case none = "None"
-        case low = "Low"
-        case medium = "Medium"
-        case high = "High"
-        
-        var id: String { rawValue }
-    }
-
     // MARK: - Initialization
     init(taskService: TaskServiceProtocol = TaskService()) {
         self.taskService = taskService

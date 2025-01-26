@@ -10,9 +10,17 @@ class TaskViewModel: ObservableObject {
     @Published var priority: FormView.Priority = .none
     @Published var formError: String?
     
+    private let taskService: TaskServiceProtocol
+    private let taskState: TaskState
+    
+    init(taskService: TaskServiceProtocol = TaskService(), taskState: TaskState = .shared) {
+        self.taskService = taskService
+        self.taskState = taskState
+    }
+    
     // MARK: - Computed Properties
     var isValidForm: Bool {
-        title.trimmingCharacters(in: .whitespaces).count >= 3
+        TaskFormatter.validateTitle(title) == nil
     }
     
     var formValidationError: String? {
@@ -27,25 +35,24 @@ class TaskViewModel: ObservableObject {
     
     // MARK: - Intent(s)
     func saveTask(context: NSManagedObjectContext) -> Bool {
-        guard isValidForm else {
-            formError = formValidationError
+        if let error = TaskFormatter.validateTitle(title) {
+            formError = error
             return false
         }
         
-        let newTask = Task(context: context)
-        newTask.title = title.trimmingCharacters(in: .whitespaces)
-        newTask.details = details.trimmingCharacters(in: .whitespaces)
-        newTask.dueDate = dueDate
-        newTask.priority = priority.rawValue
-        newTask.isCompleted = false
-        
         do {
-            try context.save()
-            print("Task Saved Successfully")
+            try taskService.createTask(
+                title: title.trimmingCharacters(in: .whitespaces),
+                details: details.trimmingCharacters(in: .whitespaces),
+                dueDate: dueDate,
+                priority: priority.rawValue,
+                context: context
+            )
             resetForm()
+            taskState.triggerRefresh()
             return true
         } catch {
-            formError = "Failed to save task: \(error.localizedDescription)"
+            formError = error.localizedDescription
             return false
         }
     }

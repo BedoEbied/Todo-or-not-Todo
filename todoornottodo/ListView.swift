@@ -11,6 +11,7 @@ import CoreData
 struct ListView: View {
     @Environment(\.managedObjectContext) private var viewContext
     @StateObject private var viewModel: ListViewModel
+    @StateObject private var taskState = TaskState.shared
     @State private var showForm = false
     
     init() {
@@ -55,6 +56,12 @@ struct ListView: View {
         }
         .onAppear {
             viewModel.loadTasks(context: viewContext)
+        }
+        .onChange(of: taskState.shouldRefreshTasks) { shouldRefresh in
+            if shouldRefresh {
+                viewModel.loadTasks(context: viewContext)
+                taskState.resetRefresh()
+            }
         }
     }
 }

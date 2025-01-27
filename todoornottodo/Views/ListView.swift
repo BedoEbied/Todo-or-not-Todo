@@ -53,7 +53,9 @@ struct ListView: View {
                 Image(systemName: "plus")
             })
             .sheet(isPresented: $showForm) {
-                FormView()
+                FormView(onTaskAdded: {
+                    viewModel.loadTasks()
+                })
             }
         }
         .onAppear {

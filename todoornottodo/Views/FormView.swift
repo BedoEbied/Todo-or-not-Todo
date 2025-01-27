@@ -10,11 +10,13 @@ import SwiftUI
 import CoreData
 
 struct FormView: View {
+    let onTaskAdded: () -> Void
     @Environment(\.managedObjectContext) private var viewContext
     @Environment(\.presentationMode) var presentationMode
     @StateObject private var viewModel: TaskViewModel
     
-    init() {
+    init(onTaskAdded: @escaping () -> Void) {
+        self.onTaskAdded = onTaskAdded
         _viewModel = StateObject(wrappedValue: TaskViewModel(context: PersistenceController.shared.container.viewContext))
     }
     
@@ -33,7 +35,7 @@ struct FormView: View {
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
                 leading: CancelButton(action: dismiss),
-                trailing: SaveButton(viewModel: viewModel, context: viewContext, onSave: dismiss)
+                trailing: SaveButton(viewModel: viewModel, context: viewContext, onSave: dismiss, onTaskAdded: onTaskAdded)
             )
         }
         .presentationDetents([.medium, .large])
@@ -109,11 +111,13 @@ private struct SaveButton: View {
     @ObservedObject var viewModel: TaskViewModel
     let context: NSManagedObjectContext
     let onSave: () -> Void
+    let onTaskAdded: () -> Void
     
     var body: some View {
         Button(Strings.Common.save) {
             let success = viewModel.saveTask()
             if success {
+                onTaskAdded()
                 onSave()
             }
         }
@@ -122,6 +126,6 @@ private struct SaveButton: View {
 }
 
 #Preview {
-    FormView()
+    FormView(onTaskAdded: {})
         .environment(\.managedObjectContext, PersistenceController.preview.container.viewContext)
 }

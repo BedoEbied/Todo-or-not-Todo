@@ -64,7 +64,6 @@ class TaskViewModel: ObservableObject {
                 )
                 resetForm()
                 isSaving = false
-                TaskState.shared.triggerRefresh()
                 return true
             } catch {
                 formError = error.localizedDescription
@@ -73,7 +72,7 @@ class TaskViewModel: ObservableObject {
             }
         }
         
-        return true  // Return true to dismiss the form, the actual save happens async
+        return true
     }
     
     func resetForm() {

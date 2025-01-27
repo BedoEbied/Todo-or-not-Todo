@@ -17,11 +17,11 @@ struct TaskFormatter {
     
     static func priorityIcon(for priority: String) -> (systemName: String, color: Color)? {
         switch priority {
-        case "High":
+        case Strings.Priority.high:
             return ("exclamationmark.circle.fill", .red)
-        case "Medium":
+        case Strings.Priority.medium:
             return ("exclamationmark.circle.fill", .orange)
-        case "Low":
+        case Strings.Priority.low:
             return ("exclamationmark.circle.fill", .yellow)
         default:
             return nil
@@ -31,11 +31,11 @@ struct TaskFormatter {
     static func validateTitle(_ title: String) -> String? {
         let trimmedTitle = title.trimmingCharacters(in: .whitespaces)
         if trimmedTitle.isEmpty {
-            return "Title is required"
+            return Strings.Task.Validation.titleRequired
         }
         if trimmedTitle.count < 3 {
-            return "Title must be at least 3 characters"
+            return Strings.Task.Validation.titleMinLength
         }
         return nil
     }
-} 
+}

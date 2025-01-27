@@ -23,13 +23,13 @@ struct ListView: View {
             ZStack {
                 List {
                     TasksSection(
-                        title: "Pending",
+                        title: Strings.Task.Section.pending,
                         tasks: viewModel.pendingTasks,
                         viewModel: viewModel
                     )
                     
                     TasksSection(
-                        title: "Completed",
+                        title: Strings.Task.Section.completed,
                         tasks: viewModel.completedTasks,
                         viewModel: viewModel
                     )
@@ -46,7 +46,7 @@ struct ListView: View {
                     }
                 }
             }
-            .navigationTitle("Todo List")
+            .navigationTitle(Strings.Navigation.Title.todoList)
             .navigationBarItems(trailing: Button(action: {
                 showForm = true
             }) {
@@ -94,7 +94,7 @@ private struct ErrorView: View {
                 .multilineTextAlignment(.center)
                 .padding()
             
-            Button("Retry", action: retryAction)
+            Button(Strings.Common.retry, action: retryAction)
                 .buttonStyle(.bordered)
         }
         .background(Color(.systemBackground))

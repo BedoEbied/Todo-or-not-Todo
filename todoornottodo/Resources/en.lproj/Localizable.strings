@@ -1,0 +1,33 @@
+// MARK: - Common
+"common.cancel" = "Cancel";
+"common.save" = "Save";
+"common.retry" = "Retry";
+
+// MARK: - Navigation
+"navigation.title.todo_list" = "Todo List";
+"navigation.title.add_task" = "Add New Task";
+
+// MARK: - Task Sections
+"task.section.pending" = "Pending";
+"task.section.completed" = "Completed";
+"task.section.task_details" = "Task Details";
+"task.section.due_date" = "Due Date";
+"task.section.priority" = "Priority";
+"task.section.due" = "Due";
+
+// MARK: - Task Form
+"task.form.title.placeholder" = "Title";
+"task.form.description.placeholder" = "Description";
+"task.form.due_date.label" = "Select Due Date";
+"task.form.error.title_required" = "Title is required";
+"task.form.error.title_min_length" = "Title must be at least 3 characters";
+
+// MARK: - Priority Levels
+"priority.none" = "None";
+"priority.low" = "Low";
+"priority.medium" = "Medium";
+"priority.high" = "High";
+
+// MARK: - Task Validation
+"task.validation.title_required" = "Title is required";
+"task.validation.title_min_length" = "Title must be at least 3 characters";

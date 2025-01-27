@@ -19,7 +19,7 @@ struct TaskRow: View {
                 Text(task.details)
                     .font(.subheadline)
                     .foregroundColor(.secondary)
-                Text("Due: \(task.dueDate, formatter: ListViewModel.dateFormatter)")
+                Text("\(Strings.Task.Section.due): \(task.dueDate, formatter: ListViewModel.dateFormatter)")
                     .font(.caption)
                     .foregroundColor(.gray)
             }

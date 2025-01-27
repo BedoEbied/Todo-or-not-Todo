@@ -36,10 +36,10 @@ class TaskViewModel: ObservableObject {
     
     var formValidationError: String? {
         if title.trimmingCharacters(in: .whitespaces).isEmpty {
-            return "Title is required"
+            return Strings.Task.Validation.titleRequired
         }
         if title.trimmingCharacters(in: .whitespaces).count < 3 {
-            return "Title must be at least 3 characters"
+            return Strings.Task.Validation.titleMinLength
         }
         return nil
     }

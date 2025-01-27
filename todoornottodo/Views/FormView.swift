@@ -29,7 +29,7 @@ struct FormView: View {
                     ErrorSection(error: error)
                 }
             }
-            .navigationTitle("Add New Task")
+            .navigationTitle(Strings.Navigation.Title.addTask)
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarItems(
                 leading: CancelButton(action: dismiss),
@@ -49,12 +49,12 @@ private struct TaskDetailsSection: View {
     @ObservedObject var viewModel: TaskViewModel
     
     var body: some View {
-        Section(header: Text("Task Details")) {
-            TextField("Title", text: $viewModel.title)
+        Section(header: Text(Strings.Task.Section.taskDetails)) {
+            TextField(Strings.Task.Form.Title.placeholder, text: $viewModel.title)
                 .autocapitalization(.words)
                 .disableAutocorrection(true)
             
-            TextField("Description", text: $viewModel.details)
+            TextField(Strings.Task.Form.Description.placeholder, text: $viewModel.details)
                 .autocapitalization(.sentences)
                 .disableAutocorrection(true)
         }
@@ -65,8 +65,8 @@ private struct DueDateSection: View {
     @ObservedObject var viewModel: TaskViewModel
     
     var body: some View {
-        Section(header: Text("Due Date")) {
-            DatePicker("Select Due Date", selection: $viewModel.dueDate, displayedComponents: .date)
+        Section(header: Text(Strings.Task.Section.dueDate)) {
+            DatePicker(Strings.Task.Form.DueDate.label, selection: $viewModel.dueDate, displayedComponents: .date)
         }
     }
 }
@@ -75,8 +75,8 @@ private struct PrioritySection: View {
     @ObservedObject var viewModel: TaskViewModel
     
     var body: some View {
-        Section(header: Text("Priority")) {
-            Picker("Priority", selection: $viewModel.priority) {
+        Section(header: Text(Strings.Task.Section.priority)) {
+            Picker(Strings.Task.Section.priority, selection: $viewModel.priority) {
                 ForEach(TaskPriority.allCases) { priority in
                     Text(priority.rawValue).tag(priority)
                 }
@@ -101,7 +101,7 @@ private struct CancelButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button("Cancel", action: action)
+        Button(Strings.Common.cancel, action: action)
     }
 }
 
@@ -111,8 +111,9 @@ private struct SaveButton: View {
     let onSave: () -> Void
     
     var body: some View {
-        Button("Save") {
-            if viewModel.saveTask() {
+        Button(Strings.Common.save) {
+            let success = viewModel.saveTask()
+            if success {
                 onSave()
             }
         }
